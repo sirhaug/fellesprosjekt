@@ -1,46 +1,95 @@
 CREATE database calendardb;
 
-CREATE TABLE participant
-(
-Name varchar(20)
+CREATE TABLE people(
+  id int NOT NULL AUTO_INCREMENT,
+  first_name varchar(256) NOT NULL,
+  last_name varchar(256) NOT NULL,
+  username varchar(20) NOT NULL,
+  hash varchar(256) NOT NULL,
+  PRIMARY KEY(id),
+  UNIQUE(username)
 );
 
-
-
-CREATE TABLE person
-(
-username varchar(20) NOT NULL,
-password varchar(20) NOT NULL,
-PRIMARY KEY(username)
+CREATE TABLE events(
+  id int NOT NULL AUTO_INCREMENT,
+  description varchar(50) NOT NULL,
+  start_time datetime NOT NULL, 
+  end_time datetime NOT NULL,
+  place varchar(20) DEFAULT NULL,
+  owner int NOT NULL, 
+  PRIMARY KEY(id),
+  FOREIGN KEY(owner)
+    REFERENCES people(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
 );
 
-CREATE TABLE meeting_group
-(
-groupID int NOT NULL ,
-PRIMARY KEY(groupID)
+CREATE TABLE rooms(
+  id int NOT NULL AUTO_INCREMENT,
+  name varchar(256) NOT NULL,
+  capacity int NOT NULL,
+  PRIMARY KEY(id)
 );
 
-
-CREATE TABLE event
-(
-eventID int NOT NULL,
-description varchar(50) NOT NULL,
-startTime int(4) NOT NULL, 
-endTime int(4),
-date date NOT NULL,
-place varchar(20),
-PRIMARY KEY(eventID)
+CREATE TABLE event_participants(
+  id int NOT NULL AUTO_INCREMENT,
+  invite_status int NOT NULL,
+  person_id int NOT NULL,
+  event_id int NOT NULL,
+  PRIMARY KEY(id),
+  FOREIGN KEY(person_id)
+    REFERENCES people(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+  FOREIGN KEY(event_id)
+    REFERENCES events(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
 );
 
-CREATE TABLE meetingRoom
-(
-roomID int NOT NULL,
-capacity int,
-PRIMARY KEY(roomID)
-)
+CREATE TABLE event_rooms(
+  id int NOT NULL AUTO_INCREMENT,
+  room_id int NOT NULL,
+  event_id int NOT NULL,
+  PRIMARY KEY(id),
+  FOREIGN KEY(event_id)
+    REFERENCES events(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+  FOREIGN KEY(room_id)
+    REFERENCES rooms(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
+);
 
+CREATE TABLE notifications(
+  id int NOT NULL AUTO_INCREMENT,
+  event_id int NOT NULL,
+  person_id int NOT NULL,
+  type varchar(256) NOT NULL,
+  PRIMARY KEY(id),
+  FOREIGN KEY(event_id)
+    REFERENCES events(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+  FOREIGN KEY(person_id)
+    REFERENCES people(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
+);
 
-
-
-
-
+CREATE TABLE alarms(
+  id int NOT NULL AUTO_INCREMENT,
+  time datetime NOT NULL,
+  event_id int NOT NULL,
+  person_id int NOT NULL,
+  PRIMARY KEY(id),
+  FOREIGN KEY(event_id)
+    REFERENCES events(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+  FOREIGN KEY(person_id)
+    REFERENCES people(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
+);
