@@ -1,6 +1,6 @@
 CREATE database calendardb;
 
-CREATE TABLE participant
+CREATE TABLEgnhjhparticipant
 (
 Name varchar(20)
 );
