@@ -1,0 +1,46 @@
+CREATE database calendardb;
+
+CREATE TABLE participant
+(
+Name varchar(20)
+);
+
+
+
+CREATE TABLE person
+(
+username varchar(20) NOT NULL,
+password varchar(20) NOT NULL,
+PRIMARY KEY(username)
+);
+
+CREATE TABLE meeting_group
+(
+groupID int NOT NULL ,
+PRIMARY KEY(groupID)
+);
+
+
+CREATE TABLE event
+(
+eventID int NOT NULL,
+description varchar(50) NOT NULL,
+startTime int(4) NOT NULL, 
+endTime int(4),
+date date NOT NULL,
+place varchar(20),
+PRIMARY KEY(eventID)
+);
+
+CREATE TABLE meetingRoom
+(
+roomID int NOT NULL,
+capacity int,
+PRIMARY KEY(roomID)
+)
+
+
+
+
+
+
