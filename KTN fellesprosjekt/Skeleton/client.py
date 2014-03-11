@@ -2,7 +2,8 @@
 KTN-project 2013 / 2014
 '''
 import socket
-
+from MessageWorker import *
+import time
 
 class Client(object):
 
@@ -11,13 +12,25 @@ class Client(object):
 
     def start(self, host, port):
         self.connection.connect((host, port))
-        self.send('Hello')
-        received_data = self.connection.recv(1024).strip()
-        print 'Received from server: ' + received_data
+
+        self.worker = ReceiveMessageWorker(self)
+        self.worker.start()
+
+        while True:
+            self.send(raw_input())
+
         self.connection.close()
 
+    def test(self):
+        while True:
+            data = self.connection.recv(1024).strip()
+            if not data:
+                break
+            else:
+                self.message_received(data, self.connection)
+
     def message_received(self, message, connection):
-        pass
+        print 'Received from server: ' + message
 
     def connection_closed(self, connection):
         pass
@@ -26,8 +39,11 @@ class Client(object):
         self.connection.sendall(data)
 
     def force_disconnect(self):
-        pass
+        self.worker
 
+    def quit(self):
+        self.worker.stopped = True
+        self.woerk._Thread__stop()
 
 if __name__ == "__main__":
     client = Client()

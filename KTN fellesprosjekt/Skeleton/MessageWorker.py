@@ -13,13 +13,17 @@ entire calling process' stack until the run() is finished.
 it is the start() method that is responsible for actually
 executing the run() method in a new thread.
 '''
+import threading
 from threading import Thread
-
 
 class ReceiveMessageWorker(Thread):
 
-    def __init__(self, listener, connection):
+    def __init__(self, client):
         self.daemeon = True
+        self.client = client
+        self.stopped = False
+        Thread.__init__(self) 
 
     def run(self):
-        pass
+      while not self.stopped:
+        self.client.test()
