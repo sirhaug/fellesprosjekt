@@ -24,6 +24,32 @@ CREATE TABLE events(
     ON DELETE CASCADE
 );
 
+CREATE TABLE groups(
+  id int NOT NULL AUTO_INCREMENT,
+  name varchar(256) NOT NULL,
+  event_id NOT NULL,
+  PRIMARY KEY(id),
+  FOREIGN KEY(event_id)
+    REFERENCES events(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
+);
+
+CREATE TABLE group_people(
+  id int NOT NULL AUTO_INCREMENT,
+  group_id NOT NULL,
+  person_id NOT NULL,
+  PRIMARY KEY(id),
+  FOREIGN KEY(group_id)
+    REFERENCES groups(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+  FOREIGN KEY(person_id)
+    REFERENCES people(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
+);
+
 CREATE TABLE rooms(
   id int NOT NULL AUTO_INCREMENT,
   name varchar(256) NOT NULL,
@@ -43,6 +69,21 @@ CREATE TABLE event_participants(
     ON DELETE CASCADE,
   FOREIGN KEY(event_id)
     REFERENCES events(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
+);
+
+CREATE TABLE event_groups(
+  id int NOT NULL AUTO_INCREMENT,
+  group_id int NOT NULL,
+  event_id int NOT NULL,
+  PRIMARY KEY(id),
+  FOREIGN KEY(event_id)
+    REFERENCES events(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+  FOREIGN KEY(group_id)
+    REFERENCES groups(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE
 );
