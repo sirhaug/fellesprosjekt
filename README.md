@@ -1,4 +1,4 @@
-4sem-fellesprosjekt
+fellesprosjekt
 ===================
 
 De kuuule folkas fellesprosjekt
