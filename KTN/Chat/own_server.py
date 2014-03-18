@@ -1,3 +1,5 @@
+#-*- coding: utf-8 -*-
+
 import socket
 import threading
 import re
@@ -11,15 +13,44 @@ class ClientHandler(threading.Thread):
         self.existing_users = existing_users
         self.username = None
 
-        '''
-        def run(self):
-            thread.start_new_thread(self)
-            while True:
-                if self.username == '':
-                    break
-                data = self.conn.recv(1024)
-                thread.start_new_thread(self.logic, (data,))
-        '''
+    '''
+    def run(self):
+        thread.start_new_thread(self.send,())
+        while True:
+            if self.username == '':
+                break
+            data = self.conn.recv(1024)
+            thread.start_new_thread(self.logic, (data,))
+    '''
+
+    def run(self):
+        #thread.start_new_thread(self.login, ())
+        while True:
+            #if self.username == None or self.username == '':
+            #    break
+            data = self.connection.recv(1024).strip()    
+            thread.start_new_thread(self.process, (data))
+
+    def login(self):
+        self.connection.sendall("Please request a username.\nAll non-valid characters will be omitted from your username.\nIf multiple words are typed, only the first word will be accepted.")
+        while True:
+            username = re.match('[\w]*', self.connection.recv(1024).strip()).group()
+            if not (self.username == None or self.username == ''):
+                self.username = username
+                break
+
+    def process(self, data):
+        process_lock = thread.allocate_lock()
+        if data:
+            if (self.username == None or self.username == ''):
+                if data.lower() == '/login':
+                    self.login()
+                else:
+                    self.connection.sendall("Please use '/login' to login.")
+                else:
+                    self.connection.sendall("You are already logged in.")
+
+
 
 '''
 Skal kjøres uansett, ikke bare når server startes som main
