@@ -17,17 +17,8 @@ client.
 
 class ClientHandler(SocketServer.BaseRequestHandler):
     def handle(self):
-
-        # Get a reference to the socket object
-        self.connection = self.request
-        # Get the remote ip adress of the socket
-        self.ip = self.client_address[0]
-        # Get the remote port number of the socket
-        self.port = self.client_address[1]
-        print 'Client connected @' + self.ip + ':' + str(self.port)
-        
-        while True:
-            # Wait for data from the client
+    	def login():
+        	# Wait for data from the client
             data = self.connection.recv(1024).strip()
             # Check if the data exists
             # (recv could have returned due to a disconnect)
@@ -39,23 +30,58 @@ class ClientHandler(SocketServer.BaseRequestHandler):
             		self.connection.sendall("         All non-valid characters will be omitted from your username.")
             		username = re.match('[\w]*', self.connection.recv(1024).strip()).group()
 
-            		if (username != None) and not (username in self.server.usernames):
+            		if (username != None) and not (self.server.users.has_key(username)):
             			self.user = self.server.login(username)
+            			return True
             		else:
             			self.connection.sendall("Invalid username, or username is already taken.")
-                
-                print data
-                # Return the string in uppercase
-                self.connection.sendall(data.upper())
+            	else:
+            		self.connection.sendall("Please use '/login' to login")
+
+            	return False
 
             else:
                 disconnect()
-                break
+
+        def broadcast(data):
+        	self.connection.sendall(data)
 
         def disconnect():
-            print 'Client disconnected!'
+			self.connection.sendall("Client disconnected!")
+			print 'Client disconnected!'
 
-            
+        # Get a reference to the socket object
+        self.connection = self.request
+        # Get the remote ip adress of the socket
+        self.ip = self.client_address[0]
+        # Get the remote port number of the socket
+        self.port = self.client_address[1]
+        print 'Client connected @' + self.ip + ':' + str(self.port)
+        
+        while True:
+        	flag = login()
+        	if flag:
+        		break
+
+        while True:
+            # Wait for data from the client
+            data = self.connection.recv(1024).strip()
+            # Check if the data exists
+            # (recv could have returned due to a disconnect)
+            if data:
+            	# self.user = self.server.login(data)
+            	if data.lower() == "/login":
+            		self.connection.sendall("You are already logged in.")
+                
+                elif data.lower() == "/logout":
+                	self.server.logout()
+
+               	else:
+               		broadcast(data)
+
+            else:
+                disconnect()
+                break    
 
 '''
 This will make all Request handlers being called in its own thread.
@@ -69,15 +95,17 @@ class User():
 class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 
     def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True, debug=True):
-        self.users = [User("martin")]
-        self.usernames = ["martin"]
+        self.users = {"martin":User("martin")}
         SocketServer.TCPServer.__init__(self, server_address, RequestHandlerClass, bind_and_activate=True)
 
     def login(self, username):
         print "login: " + username
-        self.users.append(User(username))
-        self.usernames.append(username)
-        return self.users[-1]
+        self.users[username] = User(username)
+        #return self.users[-1]
+
+    def logout(self):
+    	users.pop(self.username)
+
 
 if __name__ == "__main__":
     HOST = 'localhost'
