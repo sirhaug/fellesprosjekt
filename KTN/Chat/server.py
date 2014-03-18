@@ -104,7 +104,7 @@ class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
         #return self.users[-1]
 
     def logout(self):
-    	users.pop(self.username)
+    	self.users.pop(self.username)
 
 
 if __name__ == "__main__":
