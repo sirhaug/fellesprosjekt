@@ -43,7 +43,7 @@ class Client(object):
 
     def quit(self):
         self.worker.stopped = True
-        self.woerk._Thread__stop()
+        self.work.__Thread__stop()
 
 if __name__ == "__main__":
     client = Client()

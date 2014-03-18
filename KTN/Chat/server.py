@@ -4,6 +4,7 @@ Very simple server implementation that should serve as a basis
 for implementing the chat server
 '''
 import SocketServer
+import re
 
 '''
 The RequestHandler class for our server.
@@ -31,7 +32,18 @@ class ClientHandler(SocketServer.BaseRequestHandler):
             # Check if the data exists
             # (recv could have returned due to a disconnect)
             if data:
-                # self.user = self.server.login(data)
+            	# self.user = self.server.login(data)
+            	if data.lower() == "/login":
+            		self.connection.sendall("Type in your username, only alphanumeric letters and underscores are valid.")
+            		self.connection.sendall("WARNING: If you type in more than one continuous word, only the first word will be accepted.")
+            		self.connection.sendall("         All non-valid characters will be omitted from your username.")
+            		username = re.match('[\w]*', self.connection.recv(1024).strip()).group()
+
+            		if (username != None) and not (username in self.server.usernames):
+            			self.user = self.server.login(username)
+            		else:
+            			self.connection.sendall("Invalid username, or username is already taken.")
+                
                 print data
                 # Return the string in uppercase
                 self.connection.sendall(data.upper())
@@ -42,6 +54,7 @@ class ClientHandler(SocketServer.BaseRequestHandler):
 
         def disconnect():
             print 'Client disconnected!'
+
             
 
 '''
@@ -57,11 +70,14 @@ class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 
     def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True, debug=True):
         self.users = [User("martin")]
+        self.usernames = ["martin"]
         SocketServer.TCPServer.__init__(self, server_address, RequestHandlerClass, bind_and_activate=True)
 
     def login(self, username):
         print "login: " + username
-        return self.users[0]
+        self.users.append(User(username))
+        self.usernames.append(username)
+        return self.users[-1]
 
 if __name__ == "__main__":
     HOST = 'localhost'
