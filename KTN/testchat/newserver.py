@@ -9,12 +9,12 @@ import threading
 import time
 
 REQUEST = 'request'
-ERROR = 'error'
 MESSAGE = 'message'
 RESPONSE = 'response'
 USERNAME = 'username'
 LOGIN = '/login'
 LOGOUT = '/logout'
+SENDER = 'sender'
 
 
 class ClientHandler(threading.Thread):
@@ -38,11 +38,11 @@ class ClientHandler(threading.Thread):
         process_lock = thread.allocate_lock()
 
         try:
-            json.loads(data)
+            data = json.loads(data)
         except:
             pass
 
-        if [USERNAME] in data:
+        if USERNAME in data:
             user = data[USERNAME]
         else:
             user = self.username
@@ -52,17 +52,17 @@ class ClientHandler(threading.Thread):
         if request == LOGIN:
             #Assuring that two threads doesn't try
             #appending the same username at the same time
-            process_lock.aquire()
             if self.invalidName(user):
                 self.connection.sendall(sysmsg.invalidUser(user))
-            elif self.notUniqueName():
+            elif self.isNotUniqueName(self.connected_clients):
                 self.connection.sendall(sysmsg.nameTaken(user))
             else:
+                process_lock.acquire()
                 self.connection.sendall(sysmsg.userIsAllGood(user))
                 self.connected_clients[user] = self.connection
+                process_lock.release()
                 self.username = user
                 pending.put(sysmsg.userLogin(user))
-            process_lock.release()
 
         elif request == LOGOUT:
             if not self.isLoggedIn(self.connected_clients):
@@ -80,7 +80,7 @@ class ClientHandler(threading.Thread):
             if not self.isLoggedIn(self.connected_clients):
                 self.connection.sendall(sysmsg.notLoggedIn(user))
             else:
-                data[MESSAGE] = user + " said @ " + time.asctime().split()[3] + "\n" + data[MESSAGE]
+                data[MESSAGE] = user + " said @ " + time.asctime().split()[3] + " : " + data[MESSAGE]
                 del data[REQUEST]
                 data[RESPONSE] = request
                 data = json.dumps(data)
@@ -90,8 +90,10 @@ class ClientHandler(threading.Thread):
     def isLoggedIn(self, connected_clients):
         return self.username in connected_clients
 
-    def notUniqueName(self):
-        return self.isLoggedIn()
+    def isNotUniqueName(self, connected_clients):
+        if self.username in connected_clients:
+            return True
+        return False
 
     def invalidName(self, username):
         checked_name = ""
@@ -105,9 +107,12 @@ class ClientHandler(threading.Thread):
     def send(self):
         while True:
             delete = []
-            data = pending.get()
-            sender = data[USERNAME]
-            del data[USERNAME]
+            data = json.loads(pending.get())
+            sender = ""
+            if SENDER in data:
+                sender = data[SENDER]
+                del data[SENDER]
+            data = json.dumps(data)
 
             for user in self.connected_clients:
                 try:
