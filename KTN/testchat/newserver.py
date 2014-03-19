@@ -68,12 +68,13 @@ class ClientHandler(threading.Thread):
             if not self.isLoggedIn(self.connected_clients):
                 self.connection.sendall(sysmsg.alreadyLoggedOut(user))
             else:
+                self.connection.sendall(sysmsg.userLogout(user))
+                pending.put(sysmsg.userLogout(user))
                 process_lock.aquire()
                 del connected_clients[self.username]
                 process_lock.release()
                 self.username = ''
-                self.connection.sendall(sysmsg.userLogout(user))
-                pending.put(sysmsg.userLogout(user))
+
 
         elif request == MESSAGE:
             print "Message recieved"
