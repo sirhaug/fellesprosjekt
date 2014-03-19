@@ -1,0 +1,4 @@
+* Sende til alle bortsett fra avsender
+* Ikke legge til tilkoblinger før faktisk logget inn
+* Endre connected_clients til {'username':connetion}
+* Sjekke at alle endringer i server ikke kolliderer med client
