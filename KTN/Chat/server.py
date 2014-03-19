@@ -1,119 +1,147 @@
-'''
-KTN-project 2013 / 2014
-Very simple server implementation that should serve as a basis
-for implementing the chat server
-'''
-import SocketServer
+#-*- coding: utf-8 -*-
+from Queue import Queue
+import json
 import re
+import socket
+import sysmsg
+import thread
+import threading
+import time
 
-'''
-The RequestHandler class for our server.
+REQUEST = 'request'
+MESSAGE = 'message'
+RESPONSE = 'response'
+USERNAME = 'username'
+LOGIN = '/login'
+LOGOUT = '/logout'
+SENDER = 'sender'
 
-It is instantiated once per connection to the server, and must
-override the handle() method to implement communication to the
-client.
-'''
 
+class ClientHandler(threading.Thread):
+    def __init__(self, connection, address, pending, connected_clients):
+        threading.Thread.__init__(self)
+        self.connection = connection
+        self.address = address
+        self.pending = pending
+        self.connected_clients = connected_clients
+        self.username = None
 
-class ClientHandler(SocketServer.BaseRequestHandler):
-    def handle(self):
-    	def login():
-        	# Wait for data from the client
-            data = self.connection.recv(1024).strip()
-            # Check if the data exists
-            # (recv could have returned due to a disconnect)
-            if data:
-            	# self.user = self.server.login(data)
-            	if data.lower() == "/login":
-            		self.connection.sendall("Type in your username, only alphanumeric letters and underscores are valid.")
-            		self.connection.sendall("WARNING: If you type in more than one continuous word, only the first word will be accepted.")
-            		self.connection.sendall("         All non-valid characters will be omitted from your username.")
-            		username = re.match('[\w]*', self.connection.recv(1024).strip()).group()
-
-            		if (username != None) and not (self.server.users.has_key(username)):
-            			self.user = self.server.login(username)
-            			return True
-            		else:
-            			self.connection.sendall("Invalid username, or username is already taken.")
-            	else:
-            		self.connection.sendall("Please use '/login' to login")
-
-            	return False
-
-            else:
-                disconnect()
-
-        def broadcast(data):
-        	self.connection.sendall(data)
-
-        def disconnect():
-			self.connection.sendall("Client disconnected!")
-			print 'Client disconnected!'
-
-        # Get a reference to the socket object
-        self.connection = self.request
-        # Get the remote ip adress of the socket
-        self.ip = self.client_address[0]
-        # Get the remote port number of the socket
-        self.port = self.client_address[1]
-        print 'Client connected @' + self.ip + ':' + str(self.port)
-        
+    def run(self):
+        thread.start_new_thread(self.send, ())
         while True:
-        	flag = login()
-        	if flag:
-        		break
+            if self.username == "":
+                break
+            data = self.connection.recv(1024)
+            thread.start_new_thread(self.process, (data,))
 
-        while True:
-            # Wait for data from the client
-            data = self.connection.recv(1024).strip()
-            # Check if the data exists
-            # (recv could have returned due to a disconnect)
-            if data:
-            	# self.user = self.server.login(data)
-            	if data.lower() == "/login":
-            		self.connection.sendall("You are already logged in.")
-                
-                elif data.lower() == "/logout":
-                	self.server.logout()
+    def process(self, data):
+        process_lock = thread.allocate_lock()
 
-               	else:
-               		broadcast(data)
+        try:
+            data = json.loads(data)
+        except:
+            pass
 
+        if USERNAME in data:
+            user = data[USERNAME]
+        else:
+            user = self.username
+
+        #Handle requests
+        request = data[REQUEST]
+        if request == LOGIN:
+            #Assuring that two threads doesn't try
+            #appending the same username at the same time
+            if self.isInvalidName(user):
+                self.connection.sendall(sysmsg.invalidUser(user))
+            elif self.isNotUniqueName(user, self.connected_clients):
+                self.connection.sendall(sysmsg.nameTaken(user))
             else:
-                disconnect()
-                break    
+                process_lock.acquire()
+                self.connection.sendall(sysmsg.userIsAllGood(user))
+                self.connected_clients[user] = self.connection
+                process_lock.release()
+                self.username = user
+                pending.put(sysmsg.userLogin(user))
 
-'''
-This will make all Request handlers being called in its own thread.
-Very important, otherwise only one client will be served at a time
-'''
-class User():
-
-    def __init__(self, username):
-        self.username = username
-
-class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
-
-    def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True, debug=True):
-        self.users = {"martin":User("martin")}
-        SocketServer.TCPServer.__init__(self, server_address, RequestHandlerClass, bind_and_activate=True)
-
-    def login(self, username):
-        print "login: " + username
-        self.users[username] = User(username)
-        #return self.users[-1]
-
-    def logout(self):
-    	self.users.pop(self.username)
+        elif request == LOGOUT:
+            if not self.isLoggedIn(self.connected_clients):
+                self.connection.sendall(sysmsg.alreadyLoggedOut(user))
+            else:
+                self.connection.sendall(sysmsg.userLogout(user))
+                pending.put(sysmsg.userLogout(user))
+                process_lock.aquire()
+                del connected_clients[self.username]
+                process_lock.release()
+                self.username = ''
 
 
-if __name__ == "__main__":
-    HOST = 'localhost'
-    PORT = 9999
+        elif request == MESSAGE:
+            print "Message recieved"
+            if not self.isLoggedIn(self.connected_clients):
+                self.connection.sendall(sysmsg.notLoggedIn(user))
+            else:
+                data[MESSAGE] = "["+user+"]" + " said @ " + time.asctime().split()[3] + " : " + data[MESSAGE]
+                del data[REQUEST]
+                data[RESPONSE] = request
+                data = json.dumps(data)
+                pending.put(data)
+                print "Messages in queue: " + str(pending.qsize())
 
-    # Create the server, binding to localhost on port 9999
-    server = ThreadedTCPServer((HOST, PORT), ClientHandler)
+    def isLoggedIn(self, connected_clients):
+        return self.username in connected_clients
 
-    # Activate the server; this will keep running until you
-    # interrupt the program with Ctrl-C
-    server.serve_forever()
+    def isNotUniqueName(self, username, connected_clients):
+        if username in connected_clients:
+            return True
+        return False
+
+    def isInvalidName(self, username):
+        checked_name = ""
+        for i in username:
+            checked_name += re.match("[\w]*", i).group()
+        if username == checked_name:
+            return False
+        else:
+            return True
+
+    def send(self):
+        while True:
+            delete = []
+            data = json.loads(pending.get())
+            sender = ""
+            if SENDER in data:
+                sender = data[SENDER]
+                del data[SENDER]
+            data = json.dumps(data)
+
+            for user in self.connected_clients:
+                try:
+                    if user != sender:
+                        self.connected_clients[user].sendall(data)
+                except socket.error:
+                    delete.append(user)
+                    print str(connected_clients[user]) + " fell of the railway..."
+
+            for user in delete:
+                del connected_clients[user]
+            pending.task_done()
+        print "Message sent\nMessages in queue: " + str(pending.qsize())
+
+
+pending = Queue()
+connected_clients = {}
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+HOST = socket.gethostname()
+PORT = 8945
+
+sock.bind((HOST, PORT))
+sock.listen(20)
+print "Now waiting for connections..."
+
+while True:
+    connection, address = sock.accept()
+    if connection not in connected_clients:
+        this_thread = ClientHandler(connection, address, pending, connected_clients)
+        this_thread.start()
+        print str(address) + " just connected"
