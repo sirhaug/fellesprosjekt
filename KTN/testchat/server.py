@@ -4,7 +4,7 @@ import threading
 from Queue import Queue
 import thread
 import json
-import msg
+import sysmsg
 import re
 import time
 
@@ -48,42 +48,38 @@ class ClientHandler(threading.Thread):
         else:
             user = self.username
         if rec == LOGIN:
-            # return true if username is not valid
             if not self.testValidName(user):
-                self.sendOne(msg.userInvalid(user))
-            #returns true if username is already taken
-            elif not self.testUniquenes(user, logged_users):
-                self.sendOne(msg.userTaken(user))
+                self.connection.sendAll(sysmsg.userInvalid(user))
+            elif not self.testUniqueness(user, logged_users):
+                self.connection.sendOne(sysmsg.userTaken(user))
             #adds user to list of connections and  creates a new thread to listen to
             #incoming messages.
             else:
                 print 'success'
-                self.sendOne(msg.userOk(user))
+                self.sendOne(sysmsg.userOk(user))
                 log_lock.acquire()
                 self.logged_users.append(user)
                 self.connected_clients[connection] = True
                 log_lock.release()
                 self.username = user
-                pending.put(msg.userLogedIn(user))
+                pending.put(sysmsg.userLoggedIn(user))
 
         elif rec == LOGOUT:
-            #Returns true if user == None
             if self.checkUser():
-                self.sendOne(msg.alreadyLogedOut(user))
+                self.sendOne(sysmsg.alreadyLoggedOut(user))
             else:
                 log_lock.acquire()
                 logged_users.remove(self.username)
                 del connected_clients[connection]
                 log_lock.release()
                 self.username = ''
-                self.sendOne(msg.userLogout(user))
-                pending.put(msg.userLogout(user))
+                self.sendOne(sysmsg.userLogout(user))
+                pending.put(sysmsg.userLogout(user))
 
         elif rec == MESSAGE:
-            print 'recv'
-            #Returns true if user == None
+            print 'received'
             if self.checkUser():
-                self.sendOne(msg.notLogedInn(user))
+                self.sendOne(sysmsg.notLoggedInn(user))
             else:
                 print 'put in queue '
                 my_string = user + " " + time.asctime().split()[3] + ': ' + data[MESSAGE]
@@ -92,7 +88,7 @@ class ClientHandler(threading.Thread):
                 data[RESPONSE] = rec
                 data = json.dumps(data)
                 pending.put(data)
-                print pending.qsize()
+                print "Messages in queue: "+str(pending.qsize())
 
 
     def checkUser(self):
@@ -101,7 +97,7 @@ class ClientHandler(threading.Thread):
         else:
             return False
 
-    def testUniquenes(self, name, nameList):
+    def testUniqueness(self, name, nameList):
         if name in nameList:
             return False
         else:
@@ -131,10 +127,10 @@ class ClientHandler(threading.Thread):
                 except socket.error, msg:
                     delete.append(i)
                     print str(i) + ' has disconnected'
-                    continue
-            for t in delete:
-                del connected_clients[t]
+            for a_thread in delete:
+                del connected_clients[a_thread]
             pending.task_done()
+            print "Message sent\nMessages in queue: "+str(pending.qsize())
 
 
 pending = Queue()
@@ -146,13 +142,12 @@ PORT = 8945
 
 s.bind((HOST, PORT))
 s.listen(20)
-print 'server is now listening'
+print 'Now waiting for connections...'
 
 while True:
     connection, address = s.accept()
-    #connection.sendall("Hello")
     if connection not in connected_clients:
         connected_clients[connection] = False
-        t = ClientHandler(connection, address, pending, connected_clients, logged_users)
-        t.start()
-    print str(address) + ' just connected'
+        this_thread = ClientHandler(connection, address, pending, connected_clients, logged_users)
+        this_thread.start()
+        print str(address) + ' just connected'

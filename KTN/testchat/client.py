@@ -43,7 +43,7 @@ class Client(object):
             elif data == LOGOUT:
                 data_dict = {REQUEST: data}
             else:
-                data_dict = {REQUEST: MESSAGE, MESSAGE: data}
+                data_dict = {REQUEST: MESSAGE, MESSAGE: data, USERNAME: self.username}
             self.send(json.dumps(data_dict))
 
 
@@ -77,12 +77,9 @@ class Client(object):
                     print ""
             except TypeError:
                 pass
-            except ValueError:
-                print "Value"
-                pass
             except Exception:
+                print "Other Exception"
                 traceback.print_exc()
-                print "Hjelp!"
                 pass
 
 

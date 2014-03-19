@@ -7,7 +7,6 @@ MESSAGE = 'message'
 RESPONSE = 'response'
 USERNAME = 'username'
 LOGIN = '/login'
-LOGED = 'Loged inn'
 LOGOUT = '/logout'
 
 
@@ -16,8 +15,8 @@ def userOk(name):
     return json.dumps(ourDict)
 
 
-def userLogedIn(name):
-    ourDict = {RESPONSE: MESSAGE, MESSAGE: name + ': just loged in'}
+def userLoggedIn(name):
+    ourDict = {RESPONSE: MESSAGE, MESSAGE: name + ': just logged in'}
     return json.dumps(ourDict)
 
 
@@ -36,12 +35,12 @@ def userLogout(name):
     return json.dumps(ourDict)
 
 
-def alreadyLogedOut(name):
-    ourDict = {RESPONSE: LOGOUT, ERROR: 'Not logged in!', USERNAME: name}
+def alreadyLoggedOut(name):
+    ourDict = {RESPONSE: LOGOUT, ERROR: 'You just logged out!', USERNAME: name}
     return json.dumps(ourDict)
 
 
-def notLogedInn(name):
+def notLoggedInn(name):
     ourDict = {RESPONSE: MESSAGE, ERROR: 'You are not logged in!'}
     return json.dumps(ourDict)
 
