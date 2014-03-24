@@ -8,39 +8,44 @@ RESPONSE = "response"
 USERNAME = "username"
 LOGIN = "/login"
 LOGOUT = "/logout"
+BACKLOG = "/backlog"
 
 
 def userIsAllGood(name):
-    ourDict = {RESPONSE: LOGIN, USERNAME: name, "messages": ""}
-    return json.dumps(ourDict)
+    jsonBundle = {RESPONSE: LOGIN, USERNAME: name, "messages": ""}
+    return json.dumps(jsonBundle)
 
 
 def userLogin(name):
-    ourDict = {RESPONSE: MESSAGE, MESSAGE: name + ": just logged in"}
-    return json.dumps(ourDict)
+    jsonBundle = {RESPONSE: MESSAGE, MESSAGE: name + ": just logged in"}
+    return json.dumps(jsonBundle)
 
 
 def invalidUser(name):
-    ourDict = {RESPONSE: LOGIN, ERROR: "Invalid username!", USERNAME: name}
-    return json.dumps(ourDict)
+    jsonBundle = {RESPONSE: LOGIN, ERROR: "Invalid username!", USERNAME: name}
+    return json.dumps(jsonBundle)
 
 
 def nameTaken(name):
-    ourDict = {RESPONSE: LOGIN, ERROR: "Name already taken!", USERNAME: name}
-    return json.dumps(ourDict)
+    jsonBundle = {RESPONSE: LOGIN, ERROR: "Name already taken!", USERNAME: name}
+    return json.dumps(jsonBundle)
 
 
 def userLogout(name):
-    ourDict = {RESPONSE: LOGOUT, USERNAME: name + ": just logged out"}
-    return json.dumps(ourDict)
+    jsonBundle = {RESPONSE: LOGOUT, USERNAME: name + ": just logged out"}
+    return json.dumps(jsonBundle)
 
 
 def alreadyLoggedOut(name):
-    ourDict = {RESPONSE: LOGOUT, ERROR: "You just logged out!", USERNAME: name}
-    return json.dumps(ourDict)
+    jsonBundle = {RESPONSE: LOGOUT, ERROR: "You just logged out!", USERNAME: name}
+    return json.dumps(jsonBundle)
 
 
-def notLoggedIn(name):
-    ourDict = {RESPONSE: MESSAGE, ERROR: "Please use '/login' to login"}
-    return json.dumps(ourDict)
+def notLoggedIn():
+    jsonBundle = {RESPONSE: MESSAGE, ERROR: "Please use '/login' to login"}
+    return json.dumps(jsonBundle)
+
+def sendBacklog(backlog):
+    jsonBundle = {RESPONSE: BACKLOG, BACKLOG: backlog}
+    return json.dumps(jsonBundle)
 

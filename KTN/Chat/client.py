@@ -4,15 +4,16 @@ import socket
 import thread
 import traceback
 
-REQUEST = 'request'
+REQUEST = "request"
 REQUESTUSERNAME = "/u"
-ERROR = 'error'
-MESSAGE = 'message'
-RESPONSE = 'response'
-USERNAME = 'username'
-LOGIN = '/login'
-LOGOUT = '/logout'
-SENDER = 'sender'
+ERROR = "error"
+MESSAGE = "message"
+RESPONSE = "response"
+USERNAME = "username"
+LOGIN = "/login"
+LOGOUT = "/logout"
+SENDER = "sender"
+BACKLOG = "/backlog"
 
 
 class Client(object):
@@ -43,6 +44,8 @@ class Client(object):
                     continue
             elif data == LOGOUT:
                 data_dict = {REQUEST: data}
+            elif data == BACKLOG:
+                data_dict = {REQUEST: data}
             else:
                 data_dict = {REQUEST: MESSAGE, MESSAGE: data}
             data_dict[SENDER] = self.username
@@ -67,10 +70,16 @@ class Client(object):
                     print data[ERROR]
                 elif response == LOGIN:
                     self.username = data[USERNAME]
+                    self.connection.sendall(json.dumps({REQUEST: BACKLOG}))
                 elif response == LOGOUT:
                     print "You [" + data[USERNAME] + "] have logged out"
                     print "---"
                     self.username = ""
+                elif response == BACKLOG:
+                    backlog = data[BACKLOG]
+                    print "Backlog recieved: " + len(backlog)
+                    for messageDict in backlog:
+                        print messageDict[MESSAGE]
                 else:
                     print data[MESSAGE]
             except TypeError:
