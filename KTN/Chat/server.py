@@ -122,8 +122,9 @@ class ClientHandler(threading.Thread):
             if SENDER in data:
                 sender = data[SENDER]
                 del data[SENDER]
+            if MESSAGE in data:
+                self.updateBacklog(data)
             data = json.dumps(data)
-            self.updateBacklog(data)
 
             for user in self.connected_clients:
                 try:
@@ -131,7 +132,7 @@ class ClientHandler(threading.Thread):
                         self.connected_clients[user].sendall(data)
                 except socket.error:
                     delete.append(user)
-                    print str(connected_clients[user]) + " fell of the railway..."
+                    print str(connected_clients[user]) + " fell off the railway..."
 
             for user in delete:
                 del connected_clients[user]

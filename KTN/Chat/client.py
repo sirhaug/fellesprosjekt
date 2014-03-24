@@ -25,7 +25,7 @@ class Client(object):
     def start(self, HOST, PORT):
         self.connection.connect((HOST, PORT))
 
-        print "Connecting to server..."
+        print "Connected to server, please log in"
         thread.start_new_thread(self.receive_messages, ())
 
         while True:
@@ -77,9 +77,12 @@ class Client(object):
                     self.username = ""
                 elif response == BACKLOG:
                     backlog = data[BACKLOG]
-                    print "Backlog recieved: " + len(backlog)
+                    print "----------------\nBacklog recieved\n----------------"
                     for messageDict in backlog:
-                        print messageDict[MESSAGE]
+                        message = messageDict[MESSAGE]
+                        if message != (str(self.username) + ": just logged in"):
+                            print message
+
                 else:
                     print data[MESSAGE]
             except TypeError:
